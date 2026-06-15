@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
-import { DatabaseModule } from './database/database.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { PrismaModule } from './modules/prisma/prisma.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -10,7 +12,9 @@ import { DatabaseModule } from './database/database.module';
       isGlobal: true,
       load: [appConfig, databaseConfig],
     }),
-    DatabaseModule,
+    PrismaModule,
+    AuthModule,
+    UsersModule,
   ],
 })
 export class AppModule {}
