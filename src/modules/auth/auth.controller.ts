@@ -58,7 +58,7 @@ export class AuthController {
       | undefined;
 
     if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token missing');
+      throw new UnauthorizedException('Токен обновления отсутствует');
     }
 
     const tokens = await this.authService.refresh(refreshToken);

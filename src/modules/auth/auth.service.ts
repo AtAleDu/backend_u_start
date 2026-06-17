@@ -36,7 +36,7 @@ export class AuthService {
     const existingUser = await this.usersService.findByEmail(dto.email);
 
     if (existingUser) {
-      throw new BadRequestException('Email already in use');
+      throw new BadRequestException('Этот e-mail уже занят');
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -115,11 +115,11 @@ export class AuthService {
     );
 
     if (!stored) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Недействительный токен обновления');
     }
 
     if (stored.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token expired');
+      throw new UnauthorizedException('Срок действия токена обновления истёк');
     }
 
     return this.generateTokens(stored.user);
