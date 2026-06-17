@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'crypto';
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -18,6 +19,9 @@ export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
+
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_TIME_MS = 15 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -58,14 +62,29 @@ export class AuthService {
     const user = await this.usersService.findByEmail(dto.email);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Неверный email или пароль');
+    }
+
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      throw new ForbiddenException(
+        'Слишком много попыток входа. Попробуйте позже.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      await this.handleFailedLogin(user.id, user.failedLoginAttempts);
+      throw new UnauthorizedException('Неверный email или пароль');
     }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
+    });
 
     const tokens = await this.generateTokens(user);
 
@@ -107,6 +126,29 @@ export class AuthService {
 
   async logout(userId: string): Promise<void> {
     await this.prisma.refreshToken.deleteMany({ where: { userId } });
+  }
+
+  private async handleFailedLogin(
+    userId: string,
+    currentAttempts: number,
+  ): Promise<void> {
+    const newAttempts = currentAttempts + 1;
+
+    if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          failedLoginAttempts: newAttempts,
+          lockedUntil: new Date(Date.now() + LOCK_TIME_MS),
+        },
+      });
+      return;
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginAttempts: newAttempts },
+    });
   }
 
   private async generateTokens(user: User): Promise<AuthTokens> {
