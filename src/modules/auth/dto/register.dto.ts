@@ -20,6 +20,12 @@ export class RegisterDto {
   @MaxLength(100)
   name: string;
 
+  @ApiProperty({ example: 'Petrov' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  surname: string;
+
   @ApiProperty({ example: 'password1' })
   @IsString()
   @MinLength(8)
