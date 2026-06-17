@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
@@ -10,6 +11,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.use(helmet());
+  app.use(cookieParser());
   app.setGlobalPrefix('api');
 
   app.useGlobalPipes(
@@ -22,6 +24,9 @@ async function bootstrap() {
 
   app.enableCors({
     origin: configService.get<string>('app.corsOrigin'),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   if (process.env.NODE_ENV !== 'production') {
