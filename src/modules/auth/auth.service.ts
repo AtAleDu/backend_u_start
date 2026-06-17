@@ -1,16 +1,23 @@
+import { createHash, randomBytes } from 'crypto';
 import {
   BadRequestException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { User } from '@prisma/client';
+import { RefreshToken, User } from '@prisma/client';
 import { toSafeUser } from '../../common/types/user.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -18,6 +25,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -38,11 +46,11 @@ export class AuthService {
       },
     });
 
-    const accessToken = this.generateAccessToken(user);
+    const tokens = await this.generateTokens(user);
 
     return {
       user: toSafeUser(user),
-      accessToken,
+      ...tokens,
     };
   }
 
@@ -59,21 +67,94 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const accessToken = this.generateAccessToken(user);
+    const tokens = await this.generateTokens(user);
 
     return {
       user: toSafeUser(user),
-      accessToken,
+      ...tokens,
     };
   }
 
+  async refresh(rawRefreshToken: string): Promise<AuthTokens> {
+    const tokenHash = this.hashToken(rawRefreshToken);
+
+    // Atomic find + delete in a transaction to prevent race condition
+    // where two concurrent requests with the same token both succeed.
+    const stored = await this.prisma.$transaction(
+      async (tx): Promise<(RefreshToken & { user: User }) | null> => {
+        const token = await tx.refreshToken.findUnique({
+          where: { tokenHash },
+          include: { user: true },
+        });
+
+        if (!token) return null;
+
+        await tx.refreshToken.delete({ where: { id: token.id } });
+        return token;
+      },
+    );
+
+    if (!stored) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token expired');
+    }
+
+    return this.generateTokens(stored.user);
+  }
+
+  async logout(userId: string): Promise<void> {
+    await this.prisma.refreshToken.deleteMany({ where: { userId } });
+  }
+
+  private async generateTokens(user: User): Promise<AuthTokens> {
+    const accessToken = this.generateAccessToken(user);
+    const refreshToken = await this.createRefreshToken(user.id);
+    return { accessToken, refreshToken };
+  }
+
   private generateAccessToken(user: User): string {
-    const payload = {
+    return this.jwtService.sign({
       sub: user.id,
       email: user.email,
       role: user.role,
+    });
+  }
+
+  private async createRefreshToken(userId: string): Promise<string> {
+    const rawToken = randomBytes(64).toString('hex');
+    const tokenHash = this.hashToken(rawToken);
+    const expiresAt = this.resolveExpiresAt(
+      this.configService.getOrThrow<string>('app.jwt.refreshExpiresIn'),
+    );
+
+    await this.prisma.refreshToken.create({
+      data: { tokenHash, userId, expiresAt },
+    });
+
+    return rawToken;
+  }
+
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private resolveExpiresAt(duration: string): Date {
+    const unit = duration.slice(-1);
+    const value = parseInt(duration.slice(0, -1), 10);
+    const ms: Record<string, number> = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
     };
 
-    return this.jwtService.sign(payload);
+    if (!ms[unit] || isNaN(value)) {
+      throw new Error(`Invalid duration format: "${duration}"`);
+    }
+
+    return new Date(Date.now() + value * ms[unit]);
   }
 }

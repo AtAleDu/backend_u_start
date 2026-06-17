@@ -18,21 +18,16 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService): JwtModuleOptions => {
-        const secret = configService.get<string>('app.jwt.secret');
-        const expiresIn = configService.get<string>('app.jwt.expiresIn') ?? '7d';
-
-        if (!secret) {
-          throw new Error('JWT_SECRET is not defined');
-        }
+        const secret = configService.getOrThrow<string>('app.jwt.secret');
+        const expiresIn = configService.getOrThrow<string>(
+          'app.jwt.accessExpiresIn',
+        );
 
         const signOptions: SignOptions = {
           expiresIn: expiresIn as SignOptions['expiresIn'],
         };
 
-        return {
-          secret,
-          signOptions,
-        };
+        return { secret, signOptions };
       },
     }),
   ],

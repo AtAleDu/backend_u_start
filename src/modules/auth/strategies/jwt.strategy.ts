@@ -4,6 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserRole } from '@prisma/client';
 import { UsersService } from '../../users/users.service';
+import { toSafeUser } from '../../../common/types/user.types';
 
 export interface JwtPayload {
   sub: string;
@@ -17,14 +18,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     configService: ConfigService,
     private readonly usersService: UsersService,
   ) {
-    const secret = configService.get<string>('app.jwt.secret');
-    if (!secret) {
-      throw new Error('JWT_SECRET is not defined');
-    }
+    const secret = configService.getOrThrow<string>('app.jwt.secret');
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: secret,
+      algorithms: ['HS256'],
     });
   }
 
@@ -35,7 +34,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
-    const { password: _password, ...safeUser } = user;
-    return safeUser;
+    return toSafeUser(user);
   }
 }

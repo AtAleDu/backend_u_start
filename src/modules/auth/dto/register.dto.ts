@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
-import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'student@test.com' })
@@ -9,11 +16,17 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'Artur' })
   @IsString()
+  @MinLength(2)
+  @MaxLength(100)
   name: string;
 
-  @ApiProperty({ example: '123456', minLength: 6 })
+  @ApiProperty({ example: 'password1' })
   @IsString()
-  @MinLength(6)
+  @MinLength(8)
+  @MaxLength(72)
+  @Matches(/^(?=.*[A-Za-z])(?=.*\d).+$/, {
+    message: 'Password must contain at least one letter and one digit',
+  })
   password: string;
 
   @ApiProperty({ enum: UserRole, example: UserRole.STUDENT })
