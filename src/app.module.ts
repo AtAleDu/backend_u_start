@@ -7,6 +7,7 @@ import databaseConfig from './config/database.config';
 import { AppThrottlerGuard } from './common/guards/throttler.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
+import { ProfileModule } from './modules/profile/profile.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { UsersModule } from './modules/users/users.module';
     PrismaModule,
     AuthModule,
     UsersModule,
+    ProfileModule,
   ],
   providers: [
     {
