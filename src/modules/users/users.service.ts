@@ -16,4 +16,11 @@ export class UsersService {
       where: { id },
     });
   }
+
+  findByIdWithProfile(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: { company: true },
+    });
+  }
 }

@@ -9,8 +9,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { RefreshToken, User, UserRole } from '@prisma/client';
-import { toSafeUser } from '../../common/types/user.types';
 import { PrismaService } from '../prisma/prisma.service';
+import { mapMeResponse } from '../users/lib/map-me-response';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -45,8 +45,8 @@ export class AuthService {
       const createdUser = await tx.user.create({
         data: {
           email: dto.email,
-          name: dto.name,
-          surname: dto.surname,
+          name: dto.name ?? '',
+          surname: dto.surname ?? null,
           password: hashedPassword,
           role: dto.role,
         },
@@ -55,16 +55,24 @@ export class AuthService {
       if (dto.role === UserRole.STUDENT) {
         await tx.student.create({ data: { userId: createdUser.id } });
       } else {
-        await tx.company.create({ data: { userId: createdUser.id } });
+        await tx.company.create({
+          data: {
+            userId: createdUser.id,
+            companyName: dto.companyName,
+          },
+        });
       }
 
       return createdUser;
     });
 
     const tokens = await this.generateTokens(user);
+    const userWithProfile = await this.usersService.findByIdWithProfile(
+      user.id,
+    );
 
     return {
-      user: toSafeUser(user),
+      user: mapMeResponse(userWithProfile ?? user, userWithProfile?.company),
       ...tokens,
     };
   }
@@ -98,9 +106,12 @@ export class AuthService {
     });
 
     const tokens = await this.generateTokens(user);
+    const userWithProfile = await this.usersService.findByIdWithProfile(
+      user.id,
+    );
 
     return {
-      user: toSafeUser(user),
+      user: mapMeResponse(userWithProfile ?? user, userWithProfile?.company),
       ...tokens,
     };
   }

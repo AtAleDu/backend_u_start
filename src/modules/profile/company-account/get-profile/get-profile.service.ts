@@ -1,13 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-
-export type CompanyProfileResponse = {
-  companyId: string;
-  userId: string;
-  name: string;
-  surname: string | null;
-  email: string;
-};
+import { mapCompanyProfileResponse } from '../lib/map-company-profile-response';
+import type { CompanyProfileResponse } from '../types/company-profile.types';
 
 @Injectable()
 export class GetCompanyProfileService {
@@ -23,12 +17,6 @@ export class GetCompanyProfileService {
       throw new NotFoundException('Профиль компании не найден');
     }
 
-    return {
-      companyId: company.id,
-      userId: company.userId,
-      name: company.user.name,
-      surname: company.user.surname,
-      email: company.user.email,
-    };
+    return mapCompanyProfileResponse(company);
   }
 }

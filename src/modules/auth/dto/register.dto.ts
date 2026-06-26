@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import {
   IsEmail,
@@ -7,6 +7,7 @@ import {
   Matches,
   MaxLength,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class RegisterDto {
@@ -14,17 +15,26 @@ export class RegisterDto {
   @IsEmail({}, { message: 'Введите корректный e-mail' })
   email: string;
 
-  @ApiProperty({ example: 'Artur' })
+  @ApiPropertyOptional({ example: 'Artur' })
+  @ValidateIf((dto: RegisterDto) => dto.role === UserRole.STUDENT)
   @IsString({ message: 'Введите имя' })
   @MinLength(2, { message: 'Минимум 2 символа' })
   @MaxLength(100, { message: 'Максимум 100 символов' })
-  name: string;
+  name?: string;
 
-  @ApiProperty({ example: 'Petrov' })
+  @ApiPropertyOptional({ example: 'Petrov' })
+  @ValidateIf((dto: RegisterDto) => dto.role === UserRole.STUDENT)
   @IsString({ message: 'Введите фамилию' })
   @MinLength(2, { message: 'Минимум 2 символа' })
   @MaxLength(100, { message: 'Максимум 100 символов' })
-  surname: string;
+  surname?: string;
+
+  @ApiPropertyOptional({ example: 'ООО Ромашка' })
+  @ValidateIf((dto: RegisterDto) => dto.role === UserRole.COMPANY)
+  @IsString({ message: 'Введите название компании' })
+  @MinLength(2, { message: 'Минимум 2 символа' })
+  @MaxLength(150, { message: 'Максимум 150 символов' })
+  companyName?: string;
 
   @ApiProperty({ example: 'password1' })
   @IsString({ message: 'Введите пароль' })
