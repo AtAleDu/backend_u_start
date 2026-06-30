@@ -1,17 +1,24 @@
 import {
-  ConflictException,
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { TaskStatus } from '@prisma/client';
+import { ApplicationStatus, TaskStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskApplicationDto } from './dto/create-task-application.dto';
+import type { StudentApplicationsTabStatus } from './dto/find-student-applications-query.dto';
 import { getStudentByUserId } from './lib/get-student-by-user-id';
+import { getStudentApplicationsWhereFilter } from './lib/get-student-applications-status-filter';
+import {
+  mapStudentApplicationResponse,
+  type StudentApplicationResponse,
+} from './lib/map-student-application-response';
 import {
   mapTaskApplicationResponse,
   type TaskApplicationResponse,
 } from './lib/map-task-application-response';
+import { mapTaskResponse, type TaskResponse } from './lib/map-task-response';
 
 @Injectable()
 export class StudentTasksService {
@@ -108,5 +115,67 @@ export class StudentTasksService {
     });
 
     return application ? mapTaskApplicationResponse(application) : null;
+  }
+
+  async findMyApplications(
+    userId: string,
+    tabStatus: StudentApplicationsTabStatus = 'active',
+  ): Promise<StudentApplicationResponse[]> {
+    const student = await getStudentByUserId(this.prisma, userId);
+    const where = getStudentApplicationsWhereFilter(tabStatus);
+
+    const applications = await this.prisma.taskApplication.findMany({
+      where: {
+        studentId: student.id,
+        ...where,
+      },
+      include: {
+        task: {
+          include: {
+            company: {
+              select: { companyName: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return applications.map(mapStudentApplicationResponse);
+  }
+
+  async findStudentTask(userId: string, taskId: string): Promise<TaskResponse> {
+    const student = await getStudentByUserId(this.prisma, userId);
+
+    const application = await this.prisma.taskApplication.findUnique({
+      where: {
+        taskId_studentId: {
+          taskId,
+          studentId: student.id,
+        },
+      },
+    });
+
+    if (!application || application.status !== ApplicationStatus.ACCEPTED) {
+      throw new NotFoundException('Задание не найдено');
+    }
+
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id: taskId,
+        status: TaskStatus.IN_PROGRESS,
+      },
+      include: {
+        company: {
+          select: { companyName: true },
+        },
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Задание не найдено');
+    }
+
+    return mapTaskResponse(task);
   }
 }
