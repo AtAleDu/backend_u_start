@@ -4,17 +4,20 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
+import s3Config from './config/s3.config';
 import { AppThrottlerGuard } from './common/guards/throttler.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { ProfileModule } from './modules/profile/profile.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 import { UsersModule } from './modules/users/users.module';
+import { StorageModule } from './infrastructure/storage/storage.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig],
+      load: [appConfig, databaseConfig, s3Config],
     }),
     ThrottlerModule.forRoot([
       {
@@ -22,10 +25,12 @@ import { UsersModule } from './modules/users/users.module';
         limit: 20,
       },
     ]),
+    StorageModule,
     PrismaModule,
     AuthModule,
     UsersModule,
     ProfileModule,
+    TasksModule,
   ],
   providers: [
     {

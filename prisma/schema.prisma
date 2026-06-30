@@ -47,6 +47,31 @@ model Company {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  tasks       Task[]
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  companyId   String
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  price       Int
+  deadline    DateTime
+  fileUrls    String[]   @default([])
+  status      TaskStatus @default(OPEN)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([status])
+  @@index([companyId])
 }
 
 model RefreshToken {
