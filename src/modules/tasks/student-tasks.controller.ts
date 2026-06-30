@@ -1,0 +1,35 @@
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import type { SafeUser } from '../../common/types/user.types';
+import { CreateTaskApplicationDto } from './dto/create-task-application.dto';
+import { StudentTasksService } from './student-tasks.service';
+
+@ApiTags('Tasks')
+@ApiBearerAuth()
+@Controller('tasks')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.STUDENT)
+export class StudentTasksController {
+  constructor(private readonly service: StudentTasksService) {}
+
+  @Get(':id/my-application')
+  @ApiOperation({ summary: 'Мой отклик на задание' })
+  findMyApplication(@CurrentUser() user: SafeUser, @Param('id') id: string) {
+    return this.service.findMyApplication(user.id, id);
+  }
+
+  @Post(':id/applications')
+  @ApiOperation({ summary: 'Откликнуться на задание' })
+  apply(
+    @CurrentUser() user: SafeUser,
+    @Param('id') id: string,
+    @Body() dto: CreateTaskApplicationDto,
+  ) {
+    return this.service.apply(user.id, id, dto);
+  }
+}

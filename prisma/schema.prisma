@@ -30,13 +30,16 @@ model User {
 }
 
 model Student {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  aboutMe   String?
-  skills    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String            @id @default(uuid())
+  userId       String            @unique
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aboutMe      String?
+  skills       String?
+  ratingSum    Int               @default(0)
+  ratingCount  Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  applications TaskApplication[]
 }
 
 model Company {
@@ -57,21 +60,44 @@ enum TaskStatus {
   CLOSED
 }
 
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 model Task {
-  id          String     @id @default(uuid())
-  companyId   String
-  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  title       String
-  description String
-  price       Int
-  deadline    DateTime
-  fileUrls    String[]   @default([])
-  status      TaskStatus @default(OPEN)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id           String            @id @default(uuid())
+  companyId    String
+  company      Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  price        Int
+  deadline     DateTime
+  fileUrls     String[]          @default([])
+  status       TaskStatus        @default(OPEN)
+  rating       Int?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  applications TaskApplication[]
 
   @@index([status])
   @@index([companyId])
+}
+
+model TaskApplication {
+  id        String            @id @default(uuid())
+  taskId    String
+  task      Task              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  message   String?
+  status    ApplicationStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@unique([taskId, studentId])
+  @@index([taskId])
 }
 
 model RefreshToken {

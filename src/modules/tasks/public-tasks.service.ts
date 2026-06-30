@@ -15,6 +15,9 @@ export class PublicTasksService {
         company: {
           select: { companyName: true },
         },
+        _count: {
+          select: { applications: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -28,6 +31,9 @@ export class PublicTasksService {
       include: {
         company: {
           select: { companyName: true },
+        },
+        _count: {
+          select: { applications: true },
         },
       },
     });

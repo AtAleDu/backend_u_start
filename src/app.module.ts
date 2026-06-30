@@ -9,6 +9,7 @@ import { AppThrottlerGuard } from './common/guards/throttler.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { ProfileModule } from './modules/profile/profile.module';
+import { StudentsModule } from './modules/students/students.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { UsersModule } from './modules/users/users.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
@@ -30,6 +31,7 @@ import { StorageModule } from './infrastructure/storage/storage.module';
     AuthModule,
     UsersModule,
     ProfileModule,
+    StudentsModule,
     TasksModule,
   ],
   providers: [
