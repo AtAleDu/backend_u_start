@@ -30,6 +30,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @ApiOperation({ summary: 'Регистрация пользователя' })
   register(
     @Body() dto: RegisterDto,
