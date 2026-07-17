@@ -3,6 +3,7 @@ export const UPLOAD_TASK_FILE = {
     'image/png',
     'image/jpeg',
     'image/webp',
+    'image/svg+xml',
     'image/heif',
     'image/heic',
     'application/pdf',
