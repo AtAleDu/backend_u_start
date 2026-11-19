@@ -10,6 +10,7 @@ type MeUser = {
 
 export type MeResponse = MeUser & {
   companyName?: string | null;
+  isAdmin: boolean;
 };
 
 export function mapMeResponse(
@@ -22,6 +23,7 @@ export function mapMeResponse(
     name: user.name,
     surname: user.surname,
     role: user.role,
+    isAdmin: user.role === UserRole.ADMIN,
   };
 
   if (user.role === UserRole.COMPANY) {

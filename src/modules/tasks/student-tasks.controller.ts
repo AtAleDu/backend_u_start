@@ -7,7 +7,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -19,7 +19,7 @@ import { FindStudentApplicationsQueryDto } from './dto/find-student-applications
 import { StudentTasksService } from './student-tasks.service';
 
 @ApiTags('Tasks')
-@ApiBearerAuth()
+@ApiCookieAuth('accessToken')
 @Controller('tasks')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.STUDENT)

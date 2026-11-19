@@ -1,5 +1,5 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import type { SafeUser } from '../../common/types/user.types';
@@ -13,7 +13,7 @@ export class UsersController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiCookieAuth('accessToken')
   @ApiOperation({ summary: 'Получить текущего пользователя' })
   async getMe(@CurrentUser() user: SafeUser) {
     const userWithProfile = await this.usersService.findByIdWithProfile(

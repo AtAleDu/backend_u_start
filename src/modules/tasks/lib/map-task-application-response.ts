@@ -8,6 +8,8 @@ export type TaskApplicationResponse = {
   studentSurname: string | null;
   studentEmail?: string;
   studentRating: number;
+  aboutMe: string | null;
+  skills: string | null;
   message: string | null;
   status: ApplicationStatus;
   createdAt: string;
@@ -15,6 +17,8 @@ export type TaskApplicationResponse = {
 
 type TaskApplicationWithStudent = TaskApplication & {
   student: {
+    aboutMe: string | null;
+    skills: string | null;
     ratingSum: number;
     ratingCount: number;
     user: {
@@ -37,6 +41,8 @@ export const mapTaskApplicationResponse = (
     ? { studentEmail: application.student.user.email }
     : {}),
   studentRating: application.student.ratingSum,
+  aboutMe: application.student.aboutMe,
+  skills: application.student.skills,
   message: application.message,
   status: application.status,
   createdAt: application.createdAt.toISOString(),

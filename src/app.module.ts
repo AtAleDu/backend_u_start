@@ -6,6 +6,7 @@ import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import s3Config from './config/s3.config';
 import { AppThrottlerGuard } from './common/guards/throttler.guard';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { ProfileModule } from './modules/profile/profile.module';
@@ -33,6 +34,7 @@ import { StorageModule } from './infrastructure/storage/storage.module';
     ProfileModule,
     StudentsModule,
     TasksModule,
+    AdminModule,
   ],
   providers: [
     {

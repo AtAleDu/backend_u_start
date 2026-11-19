@@ -8,6 +8,14 @@ export const getCompanyTasksStatusFilter = (
     return [TaskStatus.OPEN];
   }
 
+  if (status === 'pending') {
+    return [TaskStatus.PENDING];
+  }
+
+  if (status === 'rejected') {
+    return [TaskStatus.REJECTED];
+  }
+
   if (status === 'in_progress') {
     return [TaskStatus.IN_PROGRESS];
   }

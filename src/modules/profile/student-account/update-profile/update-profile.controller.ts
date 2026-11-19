@@ -1,5 +1,5 @@
 import { Body, Controller, Patch, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { Roles } from '../../../../common/decorators/roles.decorator';
@@ -10,7 +10,7 @@ import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { UpdateStudentProfileService } from './update-profile.service';
 
 @ApiTags('Profile')
-@ApiBearerAuth()
+@ApiCookieAuth('accessToken')
 @Controller('profile/student')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.STUDENT)

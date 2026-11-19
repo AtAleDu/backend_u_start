@@ -10,8 +10,30 @@ import { formatValidationErrors } from './common/lib/formatValidationErrors';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  const corsOrigin = configService.get<string>('app.corsOrigin');
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'", corsOrigin].filter(Boolean) as string[],
+          fontSrc: ["'self'", 'data:'],
+          objectSrc: ["'none'"],
+          frameSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+        },
+      },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    }),
+  );
   app.use(cookieParser());
   app.setGlobalPrefix('api');
 
@@ -26,10 +48,10 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: configService.get<string>('app.corsOrigin'),
+    origin: corsOrigin,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type'],
   });
 
   if (process.env.NODE_ENV !== 'production') {
@@ -37,7 +59,7 @@ async function bootstrap() {
       .setTitle('U-start API')
       .setDescription('Backend API для платформы U-start')
       .setVersion('1.0.0')
-      .addBearerAuth()
+      .addCookieAuth('accessToken')
       .build();
 
     const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);

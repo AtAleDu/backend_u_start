@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "strictPropertyInitialization": false,
+    "module": "Node16",
+    "moduleResolution": "Node16",
     "esModuleInterop": true,
     "isolatedModules": true,
     "declaration": true,
@@ -12,10 +13,6 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
-    "paths": {
-      "@prisma/client": ["node_modules/.prisma/client"]
-    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

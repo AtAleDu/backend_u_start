@@ -1,9 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { SanitizeText } from '../../../../../common/decorators/sanitize-text.decorator';
 
 export class UpdateCompanyProfileDto {
   @ApiPropertyOptional({ example: 'ООО Ромашка' })
   @IsOptional()
+  @SanitizeText()
   @IsString({ message: 'Введите название компании' })
   @MinLength(2, { message: 'Минимум 2 символа' })
   @MaxLength(150, { message: 'Максимум 150 символов' })
@@ -12,13 +14,15 @@ export class UpdateCompanyProfileDto {
   @ApiProperty({
     example: 'IT-компания, которая развивает образовательные продукты.',
   })
+  @SanitizeText()
   @IsString({ message: 'Введите описание' })
   @MinLength(1, { message: 'Введите описание' })
   @MaxLength(400, { message: 'Максимум 400 символов' })
-  description: string;
+  description!: string;
 
   @ApiPropertyOptional({ example: 'Иван' })
   @IsOptional()
+  @SanitizeText()
   @IsString({ message: 'Введите имя' })
   @MinLength(2, { message: 'Минимум 2 символа' })
   @MaxLength(100, { message: 'Максимум 100 символов' })
@@ -26,6 +30,7 @@ export class UpdateCompanyProfileDto {
 
   @ApiPropertyOptional({ example: 'Иванов' })
   @IsOptional()
+  @SanitizeText()
   @IsString({ message: 'Введите фамилию' })
   @MinLength(2, { message: 'Минимум 2 символа' })
   @MaxLength(100, { message: 'Максимум 100 символов' })

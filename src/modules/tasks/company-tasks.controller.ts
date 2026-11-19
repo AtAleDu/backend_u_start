@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -12,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiBearerAuth,
+  ApiCookieAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
@@ -30,7 +31,7 @@ import { CompleteTaskDto } from './dto/complete-task.dto';
 import { FindCompanyTasksQueryDto } from './dto/find-company-tasks-query.dto';
 
 @ApiTags('Tasks')
-@ApiBearerAuth()
+@ApiCookieAuth('accessToken')
 @Controller('tasks')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.COMPANY)
@@ -122,6 +123,18 @@ export class CompanyTasksController {
   @ApiOperation({ summary: 'Задание компании по id' })
   findOne(@CurrentUser() user: SafeUser, @Param('id') id: string) {
     return this.service.findOne(user.id, id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Отредактировать отклонённое задание и отправить на модерацию',
+  })
+  update(
+    @CurrentUser() user: SafeUser,
+    @Param('id') id: string,
+    @Body() dto: CreateTaskDto,
+  ) {
+    return this.service.update(user.id, id, dto);
   }
 
   @Delete(':id')

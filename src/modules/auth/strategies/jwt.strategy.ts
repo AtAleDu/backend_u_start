@@ -1,16 +1,24 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserRole } from '@prisma/client';
-import { UsersService } from '../../users/users.service';
+import { Request } from 'express';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 import { toSafeUser } from '../../../common/types/user.types';
+import { UsersService } from '../../users/users.service';
+import { ACCESS_TOKEN_COOKIE } from '../auth-cookie.util';
 
 export interface JwtPayload {
   sub: string;
   email: string;
   role: UserRole;
 }
+
+const extractAccessTokenFromCookie = (req: Request): string | null => {
+  const cookies = req.cookies as Record<string, unknown> | undefined;
+  const token = cookies?.[ACCESS_TOKEN_COOKIE];
+  return typeof token === 'string' && token.length > 0 ? token : null;
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -21,7 +29,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const secret = configService.getOrThrow<string>('app.jwt.secret');
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([extractAccessTokenFromCookie]),
       secretOrKey: secret,
       algorithms: ['HS256'],
     });

@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { CompleteTaskDto } from './dto/complete-task.dto';
 import type { CompanyTasksTabStatus } from './dto/find-company-tasks-query.dto';
+import { assertCompanyCanPublishTasks } from './lib/assert-company-can-publish-tasks';
 import { getCompanyByUserId } from './lib/get-company-by-user-id';
 import { getCompanyTasksStatusFilter } from './lib/get-company-tasks-status-filter';
 import { mapTaskResponse } from './lib/map-task-response';
@@ -18,6 +19,11 @@ import {
   mapTaskApplicationResponse,
   type TaskApplicationResponse,
 } from './lib/map-task-application-response';
+import {
+  taskApplicationAcceptedStudentSelect,
+  taskApplicationStudentSelect,
+} from './lib/task-application-student-select';
+import { taskCompanySelect } from './lib/task-company-select';
 
 type UploadedFile = {
   buffer: Buffer;
@@ -61,7 +67,7 @@ export class CompanyTasksService {
   }
 
   async create(userId: string, dto: CreateTaskDto): Promise<TaskResponse> {
-    const company = await getCompanyByUserId(this.prisma, userId);
+    const company = await assertCompanyCanPublishTasks(this.prisma, userId);
     const fileUrls = dto.fileUrls ?? [];
 
     for (const url of fileUrls) {
@@ -89,11 +95,74 @@ export class CompanyTasksService {
         price: dto.price,
         deadline,
         fileUrls,
-        status: TaskStatus.OPEN,
+        status: TaskStatus.PENDING,
+        rejectionReason: null,
       },
       include: {
         company: {
-          select: { companyName: true },
+          select: taskCompanySelect,
+        },
+      },
+    });
+
+    return mapTaskResponse(task);
+  }
+
+  async update(
+    userId: string,
+    taskId: string,
+    dto: CreateTaskDto,
+  ): Promise<TaskResponse> {
+    const company = await assertCompanyCanPublishTasks(this.prisma, userId);
+
+    const existing = await this.prisma.task.findFirst({
+      where: { id: taskId, companyId: company.id },
+      select: { id: true, status: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Задание не найдено');
+    }
+
+    if (existing.status !== TaskStatus.REJECTED) {
+      throw new BadRequestException(
+        'Редактировать можно только отклонённые задания',
+      );
+    }
+
+    const fileUrls = dto.fileUrls ?? [];
+
+    for (const url of fileUrls) {
+      if (!this.storage.isOwnPublicUrl(url)) {
+        throw new BadRequestException('Недопустимая ссылка на файл');
+      }
+    }
+
+    const deadline = new Date(dto.deadline);
+    if (Number.isNaN(deadline.getTime())) {
+      throw new BadRequestException('Некорректная дата дедлайна');
+    }
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    if (deadline.getTime() < startOfToday.getTime()) {
+      throw new BadRequestException('Дедлайн не может быть в прошлом');
+    }
+
+    const task = await this.prisma.task.update({
+      where: { id: taskId },
+      data: {
+        title: dto.title.trim(),
+        description: dto.description.trim(),
+        price: dto.price,
+        deadline,
+        fileUrls,
+        status: TaskStatus.PENDING,
+        rejectionReason: null,
+      },
+      include: {
+        company: {
+          select: taskCompanySelect,
         },
       },
     });
@@ -115,7 +184,7 @@ export class CompanyTasksService {
       },
       include: {
         company: {
-          select: { companyName: true },
+          select: taskCompanySelect,
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -131,7 +200,7 @@ export class CompanyTasksService {
       where: { id, companyId: company.id },
       include: {
         company: {
-          select: { companyName: true },
+          select: taskCompanySelect,
         },
       },
     });
@@ -162,13 +231,7 @@ export class CompanyTasksService {
       where: { taskId },
       include: {
         student: {
-          select: {
-            ratingSum: true,
-            ratingCount: true,
-            user: {
-              select: { name: true, surname: true },
-            },
-          },
+          select: taskApplicationStudentSelect,
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -261,13 +324,7 @@ export class CompanyTasksService {
       },
       include: {
         student: {
-          select: {
-            ratingSum: true,
-            ratingCount: true,
-            user: {
-              select: { name: true, surname: true, email: true },
-            },
-          },
+          select: taskApplicationAcceptedStudentSelect,
         },
       },
     });

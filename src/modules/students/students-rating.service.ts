@@ -13,7 +13,7 @@ export class StudentsRatingService {
     const students = await this.prisma.student.findMany({
       include: {
         user: {
-          select: { name: true, surname: true },
+          select: { name: true, surname: true, email: true },
         },
       },
       orderBy: [{ ratingSum: 'desc' }, { createdAt: 'asc' }],

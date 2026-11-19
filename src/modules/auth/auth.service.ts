@@ -33,7 +33,15 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existingUser = await this.usersService.findByEmail(dto.email);
+    const email = dto.email.trim().toLowerCase();
+    const reservedAdminEmail =
+      this.configService.get<string>('app.admin.email') ?? '';
+
+    if (reservedAdminEmail && email === reservedAdminEmail) {
+      throw new BadRequestException('Этот e-mail недоступен для регистрации');
+    }
+
+    const existingUser = await this.usersService.findByEmail(email);
 
     if (existingUser) {
       throw new BadRequestException('Этот e-mail уже занят');
@@ -44,7 +52,7 @@ export class AuthService {
     const user = await this.prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
-          email: dto.email,
+          email,
           name: dto.name ?? '',
           surname: dto.surname ?? null,
           password: hashedPassword,
@@ -54,7 +62,7 @@ export class AuthService {
 
       if (dto.role === UserRole.STUDENT) {
         await tx.student.create({ data: { userId: createdUser.id } });
-      } else {
+      } else if (dto.role === UserRole.COMPANY) {
         await tx.company.create({
           data: {
             userId: createdUser.id,
@@ -72,13 +80,18 @@ export class AuthService {
     );
 
     return {
-      user: mapMeResponse(userWithProfile ?? user, userWithProfile?.company),
+      user: mapMeResponse(
+        userWithProfile ?? user,
+        userWithProfile?.company,
+      ),
       ...tokens,
     };
   }
 
   async login(dto: LoginDto) {
-    const user = await this.usersService.findByEmail(dto.email);
+    const user = await this.usersService.findByEmail(
+      dto.email.trim().toLowerCase(),
+    );
 
     if (!user) {
       throw new UnauthorizedException('Неверный email или пароль');
@@ -111,7 +124,10 @@ export class AuthService {
     );
 
     return {
-      user: mapMeResponse(userWithProfile ?? user, userWithProfile?.company),
+      user: mapMeResponse(
+        userWithProfile ?? user,
+        userWithProfile?.company,
+      ),
       ...tokens,
     };
   }

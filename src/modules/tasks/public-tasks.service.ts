@@ -3,6 +3,7 @@ import { TaskStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { mapTaskResponse } from './lib/map-task-response';
 import type { TaskResponse } from './lib/map-task-response';
+import { taskCompanySelect } from './lib/task-company-select';
 
 @Injectable()
 export class PublicTasksService {
@@ -13,7 +14,7 @@ export class PublicTasksService {
       where: { status: TaskStatus.OPEN },
       include: {
         company: {
-          select: { companyName: true },
+          select: taskCompanySelect,
         },
         _count: {
           select: { applications: true },
@@ -30,7 +31,7 @@ export class PublicTasksService {
       where: { id, status: TaskStatus.OPEN },
       include: {
         company: {
-          select: { companyName: true },
+          select: taskCompanySelect,
         },
         _count: {
           select: { applications: true },

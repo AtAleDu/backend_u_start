@@ -9,16 +9,16 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import type { SafeUser } from '../../common/types/user.types';
 import {
-  clearRefreshTokenCookie,
+  clearAuthCookies,
   REFRESH_TOKEN_COOKIE,
-  setRefreshTokenCookie,
+  setAuthCookies,
 } from './auth-cookie.util';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -63,21 +63,21 @@ export class AuthController {
     }
 
     const tokens = await this.authService.refresh(refreshToken);
-    setRefreshTokenCookie(res, tokens.refreshToken);
+    setAuthCookies(res, tokens);
 
-    return { accessToken: tokens.accessToken };
+    return { ok: true };
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiCookieAuth('accessToken')
   @ApiOperation({ summary: 'Выйти из аккаунта (инвалидировать все сессии)' })
   logout(
     @CurrentUser() user: SafeUser,
     @Res({ passthrough: true }) res: Response,
   ) {
-    clearRefreshTokenCookie(res);
+    clearAuthCookies(res);
     return this.authService.logout(user.id);
   }
 
@@ -86,8 +86,8 @@ export class AuthController {
     res: Response,
   ) {
     const { user, accessToken, refreshToken } = await action();
-    setRefreshTokenCookie(res, refreshToken);
+    setAuthCookies(res, { accessToken, refreshToken });
 
-    return { user, accessToken };
+    return { user };
   }
 }

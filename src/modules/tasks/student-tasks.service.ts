@@ -19,6 +19,8 @@ import {
   type TaskApplicationResponse,
 } from './lib/map-task-application-response';
 import { mapTaskResponse, type TaskResponse } from './lib/map-task-response';
+import { taskApplicationStudentSelect } from './lib/task-application-student-select';
+import { taskCompanySelect } from './lib/task-company-select';
 
 @Injectable()
 export class StudentTasksService {
@@ -30,6 +32,12 @@ export class StudentTasksService {
     dto: CreateTaskApplicationDto,
   ): Promise<TaskApplicationResponse> {
     const student = await getStudentByUserId(this.prisma, userId);
+
+    if (!student.aboutMe?.trim() || !student.skills?.trim()) {
+      throw new BadRequestException(
+        'Заполните «О себе» и навыки в профиле, чтобы откликаться',
+      );
+    }
 
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
@@ -74,13 +82,7 @@ export class StudentTasksService {
       },
       include: {
         student: {
-          select: {
-            ratingSum: true,
-            ratingCount: true,
-            user: {
-              select: { name: true, surname: true },
-            },
-          },
+          select: taskApplicationStudentSelect,
         },
       },
     });
@@ -103,13 +105,7 @@ export class StudentTasksService {
       },
       include: {
         student: {
-          select: {
-            ratingSum: true,
-            ratingCount: true,
-            user: {
-              select: { name: true, surname: true },
-            },
-          },
+          select: taskApplicationStudentSelect,
         },
       },
     });
@@ -133,7 +129,7 @@ export class StudentTasksService {
         task: {
           include: {
             company: {
-              select: { companyName: true },
+              select: taskCompanySelect,
             },
           },
         },
@@ -167,7 +163,7 @@ export class StudentTasksService {
       },
       include: {
         company: {
-          select: { companyName: true },
+          select: taskCompanySelect,
         },
       },
     });

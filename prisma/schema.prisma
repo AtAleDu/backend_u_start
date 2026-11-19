@@ -9,6 +9,7 @@ datasource db {
 enum UserRole {
   STUDENT
   COMPANY
+  ADMIN
 }
 
 model User {
@@ -54,10 +55,12 @@ model Company {
 }
 
 enum TaskStatus {
+  PENDING
   OPEN
   IN_PROGRESS
   COMPLETED
   CLOSED
+  REJECTED
 }
 
 enum ApplicationStatus {
@@ -74,12 +77,13 @@ model Task {
   description  String
   price        Int
   deadline     DateTime
-  fileUrls     String[]          @default([])
-  status       TaskStatus        @default(OPEN)
-  rating       Int?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  applications TaskApplication[]
+  fileUrls         String[]          @default([])
+  status           TaskStatus        @default(PENDING)
+  rating           Int?
+  rejectionReason  String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  applications     TaskApplication[]
 
   @@index([status])
   @@index([companyId])

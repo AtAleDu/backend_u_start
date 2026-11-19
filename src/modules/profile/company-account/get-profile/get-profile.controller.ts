@@ -1,5 +1,5 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { Roles } from '../../../../common/decorators/roles.decorator';
@@ -9,7 +9,7 @@ import type { SafeUser } from '../../../../common/types/user.types';
 import { GetCompanyProfileService } from './get-profile.service';
 
 @ApiTags('Profile')
-@ApiBearerAuth()
+@ApiCookieAuth('accessToken')
 @Controller('profile/company')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.COMPANY)

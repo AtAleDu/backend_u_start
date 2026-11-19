@@ -2,21 +2,25 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import {
   IsEmail,
-  IsEnum,
+  IsIn,
   IsString,
   Matches,
   MaxLength,
   MinLength,
   ValidateIf,
 } from 'class-validator';
+import { SanitizeText } from '../../../common/decorators/sanitize-text.decorator';
+
+const PUBLIC_ROLES = [UserRole.STUDENT, UserRole.COMPANY] as const;
 
 export class RegisterDto {
   @ApiProperty({ example: 'student@test.com' })
   @IsEmail({}, { message: 'Введите корректный e-mail' })
-  email: string;
+  email!: string;
 
   @ApiPropertyOptional({ example: 'Artur' })
   @ValidateIf((dto: RegisterDto) => dto.role === UserRole.STUDENT)
+  @SanitizeText()
   @IsString({ message: 'Введите имя' })
   @MinLength(2, { message: 'Минимум 2 символа' })
   @MaxLength(100, { message: 'Максимум 100 символов' })
@@ -24,6 +28,7 @@ export class RegisterDto {
 
   @ApiPropertyOptional({ example: 'Petrov' })
   @ValidateIf((dto: RegisterDto) => dto.role === UserRole.STUDENT)
+  @SanitizeText()
   @IsString({ message: 'Введите фамилию' })
   @MinLength(2, { message: 'Минимум 2 символа' })
   @MaxLength(100, { message: 'Максимум 100 символов' })
@@ -31,6 +36,7 @@ export class RegisterDto {
 
   @ApiPropertyOptional({ example: 'ООО Ромашка' })
   @ValidateIf((dto: RegisterDto) => dto.role === UserRole.COMPANY)
+  @SanitizeText()
   @IsString({ message: 'Введите название компании' })
   @MinLength(2, { message: 'Минимум 2 символа' })
   @MaxLength(150, { message: 'Максимум 150 символов' })
@@ -43,9 +49,9 @@ export class RegisterDto {
   @Matches(/^(?=.*[A-Za-z])(?=.*\d).+$/, {
     message: 'Пароль должен содержать буквы и цифры',
   })
-  password: string;
+  password!: string;
 
-  @ApiProperty({ enum: UserRole, example: UserRole.STUDENT })
-  @IsEnum(UserRole, { message: 'Выберите корректную роль' })
-  role: UserRole;
+  @ApiProperty({ enum: PUBLIC_ROLES, example: UserRole.STUDENT })
+  @IsIn(PUBLIC_ROLES, { message: 'Выберите корректную роль' })
+  role!: (typeof PUBLIC_ROLES)[number];
 }
